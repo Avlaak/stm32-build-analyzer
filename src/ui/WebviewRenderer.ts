@@ -352,6 +352,14 @@ export class WebviewRenderer {
                     gap: 6px;
                 }
 
+                /* Column widths */
+                #regionsTable th:nth-child(1), #regionsTable td:nth-child(1) { width: 15%; }
+                #regionsTable th:nth-child(2), #regionsTable td:nth-child(2) { width: 40%; }
+                #regionsTable th:nth-child(3), #regionsTable td:nth-child(3) { width: 15%; }
+                #regionsTable th:nth-child(4), #regionsTable td:nth-child(4) { width: 10%; }
+                #regionsTable th:nth-child(5), #regionsTable td:nth-child(5) { width: 10%; }
+                #regionsTable th:nth-child(6), #regionsTable td:nth-child(6) { width: 10%; }
+
                 #regionsTable {
                     width: 100%;
                     border-collapse: collapse;
