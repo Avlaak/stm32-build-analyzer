@@ -51,34 +51,54 @@ export class BuildFolderResolver {
       throw new Error('No build folders containing both .map and .elf found');
     }
 
-    let target = folders[0];
-    if (folders.length > 1) {
-      if (this.debug) {
-        console.log(`[STM32] Multiple build folders found:`);
-        folders.forEach(f => console.log(` → ${f}`));
-      }
+    const items: { label: string, detail: string, elf: string, map: string }[] = [];
 
-      const pick = await vscode.window.showQuickPick(
-        folders.map(f => ({ label: path.basename(f), folder: f })),
-        { placeHolder: 'Select build folder with .map & .elf' }
-      );
-      if (!pick) {
-        throw new Error('Build folder selection cancelled');
+    for (const folder of folders) {
+      const files = fs.readdirSync(folder);
+      const elfs = files.filter(f => f.endsWith('.elf'));
+      const maps = files.filter(f => f.endsWith('.map'));
+
+      for (const elf of elfs) {
+        const basename = path.basename(elf, '.elf');
+        const map = maps.find(m => m === basename + '.map');
+
+        if (map) {
+          const elfPath = path.join(folder, elf);
+          const mapPath = path.join(folder, map);
+          items.push({
+            label: `$(file-binary) ${basename}`,
+            detail: vscode.workspace.asRelativePath(folder),
+            elf: elfPath,
+            map: mapPath
+          });
+        }
       }
-      target = pick.folder;
     }
 
-    if (this.debug) {console.log(`[STM32] Selected folder: ${target}`);}
+    if (items.length === 0) {
+       throw new Error('No matching .elf and .map files found');
+    }
 
-    const mapFile = await this.findFile(target, '.map');
-    const elfFile = await this.findFile(target, '.elf');
-    if (!mapFile || !elfFile) {
-      throw new Error(`Missing .map or .elf in ${target}`);
+    let selectedItem = items[0];
+    
+    if (items.length > 1) {
+      const pick = await vscode.window.showQuickPick(items, { 
+        placeHolder: 'Select build artifact (.elf & .map)' 
+      });
+      if (!pick) {
+        throw new Error('Selection cancelled');
+      }
+      selectedItem = pick;
+    }
+
+    if (this.debug) {
+        console.log(`[STM32] Selected ELF: ${selectedItem.elf}`);
+        console.log(`[STM32] Selected MAP: ${selectedItem.map}`);
     }
 
     return {
-      map: mapFile,
-      elf: elfFile,
+      map: selectedItem.map,
+      elf: selectedItem.elf,
       toolchainPath: await this.getToolchainPath(),
     };
   }
