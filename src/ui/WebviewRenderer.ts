@@ -152,12 +152,13 @@ export class WebviewRenderer {
                     cursor: pointer;
                     background-color: var(--vscode-button-secondaryBackground);
                     color: var(--vscode-button-secondaryForeground);
-                    border: 1px solid var(--vscode-button-secondaryBorder);
+                    border: none;
                     border-radius: 2px;
                     height: 26px;
                     box-sizing: border-box;
                     font-family: var(--vscode-font-family);
                     font-size: 13px;
+                    white-space: nowrap;
                 }
 
                 #refreshButton:hover,
@@ -292,28 +293,126 @@ export class WebviewRenderer {
                     color: var(--vscode-textLink-foreground);
                 }
 
+                .table-container {
+                    display: flex;
+                    flex-direction: column;
+                    height: 99vh;
+                    overflow: hidden;
+                }
+
+                .button-container-sticky {
+                    position: sticky;
+                    top: 0;
+                    background-color: var(--vscode-sideBar-background);
+                    border-bottom: 1px solid var(--vscode-panel-border);
+                    z-index: 11;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 4px 8px;
+                    gap: 8px;
+                    margin-bottom: 0;
+                    flex-wrap: nowrap;
+                }
+
+                .left-controls {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex: 1;
+                    overflow: hidden;
+                }
+
+                .build-folder-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    font-family: var(--vscode-font-family);
+                    font-size: 13px;
+                }
+
+                #buildFolderPath {
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                
+                #buildFolderPath:empty::before {
+                    content: "Not selected";
+                    color: var(--vscode-descriptionForeground);
+                    font-style: italic;
+                }
+
+                .right-controls {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                #regionsTable {
+                    width: 100%;
+                    border-collapse: collapse;
+                    flex: 1;
+                }
+
+                #regionsTable thead th {
+                    position: sticky;
+                    top: 34px;
+                    background: var(--vscode-list-header-background, var(--vscode-editor-background, #f8f8f8));
+                    z-index: 12;
+                    border-bottom: 2px solid #000;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+
+                #regionsTable tbody {
+                    display: block;
+                    height: calc(99vh - 34px);
+                    overflow-y: auto;
+                }
+
+                #regionsTable thead, 
+                #regionsTable tbody tr {
+                    display: table;
+                    width: 100%;
+                    table-layout: fixed;
+                }
+
+                #regionsTable tbody tr {
+                    width: 100%;
+                }
+
+
             </style>
         </head>
         <body>
-            <div class="button-container">
-                <button id="refreshButton" class="button">Refresh Analyze</button>
-                <button id="refreshPathsButton" class="button">Change Build Folder</button>
-                <div class="search-widget">
-                    <input type="text" id="searchInput" placeholder="Search symbols..." />
-                    <div class="search-options">
-                        <button class="search-option" id="caseSensitive" title="Match Case">Aa</button>
-                        <button class="search-option" id="wholeWord" title="Match Whole Word">ab</button>
-                        <button class="search-option" id="useRegex" title="Use Regular Expression">.*</button>
+           <div class="table-container">
+            <div class="button-container-sticky">
+                <div class="left-controls">
+                    <div class="build-folder-info">
+                        <label><strong>Current Build Folder:</strong></label>
+                        <span id="buildFolderPath"></span>
                     </div>
+                    <button id="refreshPathsButton" class="button">Change</button>
+                    <button id="refreshButton" class="button">Refresh Analyze</button>
                 </div>
-                <span id="searchMatchCount" class="search-match-count"></span>
-            </div>
-            <div class="current-build-folder-path-container">
-                <label><strong>Current Build Folder:</strong></label>
-                <div id="buildFolderPath" style="margin-bottom: 10px;"></div>
+                
+                <div class="right-controls">
+                    <div class="search-widget">
+                        <input type="text" id="searchInput" placeholder="Search symbols..." />
+                        <div class="search-options">
+                            <button class="search-option" id="caseSensitive" title="Match Case">Aa</button>
+                            <button class="search-option" id="wholeWord" title="Match Whole Word">ab</button>
+                            <button class="search-option" id="useRegex" title="Use Regular Expression">.*</button>
+                        </div>
+                    </div>
+                    <span id="searchMatchCount" class="search-match-count"></span>
+                </div>
             </div>
 
-            <table id="regionsTable">
+            <table id="regionsTable" class="scroll-container">
                 <thead id="regionsHead">
                     <tr>
                         <td></td>
@@ -327,6 +426,7 @@ export class WebviewRenderer {
                 <tbody id="regionsBody">
                 </tbody>
             </table>
+        </div>
             <script>
                 const vscode = acquireVsCodeApi();
                 
@@ -512,8 +612,8 @@ export class WebviewRenderer {
                                 
                                 const pointTd5 = document.createElement('td');
                                 pointTd5.className = 'right-align';
-                                const pointTd6 = document.createElement('td');  
-                                pointTd6.className = 'right-align';                              
+                                const pointTd6 = document.createElement('td');
+                                pointTd6.className = 'right-align';
 
                                 pointTr.appendChild(pointTd1);
                                 pointTr.appendChild(pointTd2);
