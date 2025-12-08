@@ -32,6 +32,8 @@ This fork removes that dependency, adds broader file handling, and enhances the 
 - Visual panel with color-coded usage (RAM, Flash)
 - ARM toolchain integration (`arm-none-eabi-objdump`, `nm`)
 - Compatible with any STM32 build system
+- Search functionality for symbols (case-sensitive, whole word, regex options)
+- Sorting by name, address, and size (ascending/descending)
 
 ---
 
