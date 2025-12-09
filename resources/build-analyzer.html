@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="${csp}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Analyzer</title>
+    <style>
+        table.gray {
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            font-family: var(--vscode-font-family);
+            width: 100%;
+            text-align: left;
+            border-collapse: collapse;
+        }
+        table.gray td, table.gray th {
+            border: 1px solid var(--highlight-color);
+            padding: 3px 2px;
+        }
+        table.gray td:nth-child(5),
+        table.gray td:nth-child(6) {
+            text-align: right;
+        }
+        table.gray tbody td {
+            font-size: 13px;
+        }
+        
+        table.gray thead {
+            background: var(--highlight-color);
+            border-bottom: 2px solid var(--highlight-color);
+        }
+        table.gray thead th {
+            font-size: 15px;
+            font-weight: bold;
+            border-left: 2px solid var(--highlight-color);
+        }
+        table.gray thead th:first-child {
+            border-left: none;
+        }
+        #regionsHead td {
+            text-align: center;
+        }
+        #regionsBody td {
+            padding-left: 5px;
+            padding-right: 5px;
+        }  
+        #regionsBody td.right-align {
+            text-align: right;
+        }
+        .bar { 
+            background-color: var(--vscode-editorWidget-border); 
+            width: 100px; 
+            height: 100%;
+            display: inline-block;
+        } 
+        .toggle {
+            cursor: pointer;
+            display: inline-block;
+            width: 20px;
+            user-select: none;
+        }
+        #refreshButton,
+        #refreshPathsButton {
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            border-radius: 2px;
+            height: 26px;
+            box-sizing: border-box;
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        #refreshButton:hover,
+        #refreshPathsButton:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+
+        .button-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: nowrap;
+        }
+
+        .search-widget {
+            display: flex;
+            align-items: center;
+            background-color: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            height: 26px;
+            box-sizing: border-box;
+            padding: 0 2px;
+        }
+
+        .search-widget:focus-within {
+            outline: 1px solid var(--vscode-focusBorder);
+            border-color: var(--vscode-focusBorder);
+        }
+
+        #searchInput {
+            flex: 1;
+            padding: 3px 6px;
+            background-color: transparent;
+            color: var(--vscode-input-foreground);
+            border: none;
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
+            height: 22px;
+            box-sizing: border-box;
+            min-width: 100px;
+            outline: none;
+        }
+
+        #searchInput::placeholder {
+            color: var(--vscode-input-placeholderForeground);
+        }
+
+        .search-options {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            padding-right: 2px;
+        }
+
+        .search-option {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 3px;
+            background-color: transparent;
+            border: none;
+            color: var(--vscode-input-foreground);
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
+            font-weight: bold;
+            opacity: 0.7;
+        }
+
+        .search-option:hover {
+            background-color: var(--vscode-toolbar-hoverBackground);
+            opacity: 1;
+        }
+
+        .search-option.active {
+            background-color: var(--vscode-inputOption-activeBackground);
+            color: var(--vscode-inputOption-activeForeground);
+            border: 1px solid var(--vscode-inputOption-activeBorder);
+            opacity: 1;
+        }
+
+        .search-option[title="Match Case"] {
+            font-size: 13px;
+            font-weight: normal;
+        }
+
+        .search-option[title="Match Whole Word"] {
+            font-size: 13px;
+            font-weight: normal;
+            text-decoration: underline;
+        }
+
+        .search-option[title="Use Regular Expression"] {
+            font-size: 13px;
+            font-weight: normal;
+        }
+
+        .search-highlight {
+            background-color: var(--vscode-editor-findMatchHighlightBackground);
+        }
+
+        .search-match-count {
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+        }
+
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .sortable-header:hover {
+            background-color: var(--vscode-list-hoverBackground);
+        }
+
+        .sort-indicator {
+            display: inline-block;
+            margin-left: 4px;
+            opacity: 0.3;
+            font-size: 13px;
+        }
+
+        .sort-indicator.active {
+            opacity: 1;
+            color: var(--vscode-textLink-foreground);
+        }
+
+        .table-container {
+            display: flex;
+            flex-direction: column;
+            height: 99vh;
+            overflow: hidden;
+        }
+
+        .button-container-sticky {
+            position: sticky;
+            top: 0;
+            background-color: var(--vscode-sideBar-background);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 8px;
+            gap: 8px;
+            margin-bottom: 0;
+            flex-wrap: nowrap;
+        }
+
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .build-folder-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: var(--vscode-font-family);
+            font-size: 13px;
+        }
+
+        #buildFolderPath {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #buildFolderPath:empty::before {
+            content: "Not selected";
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+        }
+
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Column widths */
+        #regionsTable th:nth-child(1), #regionsTable td:nth-child(1) { width: 15%; }
+        #regionsTable th:nth-child(2), #regionsTable td:nth-child(2) { width: 40%; }
+        #regionsTable th:nth-child(3), #regionsTable td:nth-child(3) { width: 15%; }
+        #regionsTable th:nth-child(4), #regionsTable td:nth-child(4) { width: 10%; }
+        #regionsTable th:nth-child(5), #regionsTable td:nth-child(5) { width: 10%; }
+        #regionsTable th:nth-child(6), #regionsTable td:nth-child(6) { width: 10%; }
+
+        #regionsTable {
+            width: 100%;
+            border-collapse: collapse;
+            flex: 1;
+        }
+
+        #regionsTable thead th {
+            position: sticky;
+            top: 34px;
+            background: var(--vscode-list-header-background, var(--vscode-editor-background, #f8f8f8));
+            z-index: 12;
+            border-bottom: 2px solid #000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #regionsTable tbody {
+            display: block;
+            height: calc(99vh - 70px);
+            overflow-y: auto;
+        }
+
+        #regionsTable thead, 
+        #regionsTable tbody tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        #regionsTable tbody tr {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="table-container">
+        <div class="button-container-sticky">
+            <div class="left-controls">
+                <div class="build-folder-info">
+                    <label><strong>Current Build Folder:</strong></label>
+                    <span id="buildFolderPath"></span>
+                </div>
+                <button id="refreshPathsButton" class="button">Change</button>
+                <button id="refreshButton" class="button">Refresh Analyze</button>
+            </div>
+            
+            <div class="right-controls">
+                <div class="search-widget">
+                    <input type="text" id="searchInput" placeholder="Search symbols..." />
+                    <div class="search-options">
+                        <button class="search-option" id="caseSensitive" title="Match Case">Aa</button>
+                        <button class="search-option" id="wholeWord" title="Match Whole Word">ab</button>
+                        <button class="search-option" id="useRegex" title="Use Regular Expression">.*</button>
+                    </div>
+                </div>
+                <span id="searchMatchCount" class="search-match-count"></span>
+            </div>
+        </div>
+
+        <table id="regionsTable" class="scroll-container">
+            <thead id="regionsHead">
+                <tr>
+                    <td></td>
+                    <td class="sortable-header" data-sort="name">Name <span class="sort-indicator" id="sort-name">↕</span></td>
+                    <td class="sortable-header" data-sort="address">Address <span class="sort-indicator" id="sort-address">↕</span></td>
+                    <td class="sortable-header" data-sort="size">Size <span class="sort-indicator" id="sort-size">↕</span></td>
+                    <td>Used</td>
+                    <td>Free</td>
+                </tr>
+            </thead>
+            <tbody id="regionsBody">
+            </tbody>
+        </table>
+    </div>
+    <script nonce="${nonce}" src="${scriptUri}"></script>
+</body>
+</html>
